@@ -215,18 +215,24 @@ def validate_signal_with_correlations_task(
     return result.data if result.success else {'error': result.error}
 
 
-@shared_task
-def send_signal_notification_task(signal_id: str):
+@shared_task(bind=True, max_retries=3)
+def send_signal_notification_task(self, signal_id: str):
     """
     Send notification for a new signal.
+
+    Sends notifications through all configured channels:
+    - Logging (always enabled)
+    - Email (if configured via TRADING_NOTIFICATION_EMAIL)
+    - Webhook (if configured via TRADING_NOTIFICATION_WEBHOOK_URL)
 
     Args:
         signal_id: UUID of the signal
 
     Returns:
-        dict: Notification result
+        dict: Notification result with channel statuses
     """
     from .models import Signal
+    from .services import NotificationService, NotificationPayload
 
     try:
         signal = Signal.objects.select_related('trading_pair').get(id=signal_id)
@@ -234,22 +240,49 @@ def send_signal_notification_task(signal_id: str):
         logger.error(f"Signal not found: {signal_id}")
         return {'error': 'Signal not found'}
 
-    # Placeholder for notification logic
-    # Could integrate with email, Telegram, Discord, etc.
-    notification_data = {
-        'signal_id': str(signal.id),
-        'trading_pair': signal.trading_pair.symbol,
-        'signal': signal.signal,
-        'confluence_score': signal.confluence_score,
-        'vote_count': signal.vote_count,
-        'entry_price': str(signal.entry_price),
-        'stop_loss': str(signal.stop_loss),
-        'take_profit': str(signal.take_profit),
-    }
+    # Create notification payload
+    payload = NotificationPayload(
+        signal_id=str(signal.id),
+        trading_pair=signal.trading_pair.symbol,
+        signal_type=signal.signal,
+        confluence_score=float(signal.confluence_score),
+        vote_count=signal.vote_count,
+        entry_price=str(signal.entry_price),
+        stop_loss=str(signal.stop_loss),
+        take_profit=str(signal.take_profit),
+        timeframe=signal.timeframe,
+        metadata={
+            'created_at': signal.created_at.isoformat() if signal.created_at else None,
+            'expires_at': signal.expires_at.isoformat() if signal.expires_at else None,
+        },
+    )
 
-    logger.info(f"Signal notification queued: {notification_data}")
+    # Send notification through all configured channels
+    notification_service = NotificationService()
+    result = notification_service.send_signal_notification(payload)
+
+    if result.success:
+        logger.info(
+            f"Signal notification sent for {signal.trading_pair.symbol}: "
+            f"channels={result.data['channels_succeeded']}"
+        )
+    else:
+        logger.error(
+            f"Signal notification failed for {signal.trading_pair.symbol}: "
+            f"{result.error}"
+        )
+        # Retry on failure
+        try:
+            self.retry(countdown=60)
+        except self.MaxRetriesExceededError:
+            logger.error(f"Max retries exceeded for signal notification: {signal_id}")
 
     return {
-        'sent': True,
-        'notification_data': notification_data,
+        'sent': result.success,
+        'signal_id': str(signal.id),
+        'trading_pair': signal.trading_pair.symbol,
+        'channels_attempted': result.data.get('channels_attempted', []),
+        'channels_succeeded': result.data.get('channels_succeeded', []),
+        'channels_failed': result.data.get('channels_failed', []),
+        'errors': result.data.get('errors', []),
     }

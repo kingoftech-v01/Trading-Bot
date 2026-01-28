@@ -12,6 +12,7 @@ from django.urls import path, include
 
 # API v1 URL patterns
 api_v1_patterns = [
+    path('core/', include('apps.core.urls', namespace='core')),
     path('market-data/', include('apps.market_data.urls', namespace='market_data')),
     path('indicators/', include('apps.indicators.urls', namespace='indicators')),
     path('combinations/', include('apps.combinations.urls', namespace='combinations')),

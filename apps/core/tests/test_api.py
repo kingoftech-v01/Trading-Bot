@@ -15,9 +15,58 @@ class HealthCheckAPITestCase(APITestCase):
 
     def test_health_check_returns_200(self):
         """Test that health check returns 200 OK."""
-        # Note: URL pattern may need adjustment based on actual routing
-        pass
+        url = '/api/v1/core/health/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_health_check_returns_healthy_status(self):
         """Test that health check returns healthy status."""
-        pass
+        url = '/api/v1/core/health/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['status'], 'healthy')
+
+    def test_health_check_returns_version(self):
+        """Test that health check returns version info."""
+        url = '/api/v1/core/health/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('version', response.data)
+        self.assertEqual(response.data['version'], '1.0.0')
+
+    def test_health_check_json_content_type(self):
+        """Test that health check returns JSON content type."""
+        url = '/api/v1/core/health/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response['Content-Type'], 'application/json')
+
+    def test_health_check_only_allows_get(self):
+        """Test that health check only allows GET method."""
+        url = '/api/v1/core/health/'
+
+        # POST should fail
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # PUT should fail
+        response = self.client.put(url)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # DELETE should fail
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class BaseModelViewSetTestCase(APITestCase):
+    """Test cases for BaseModelViewSet functionality."""
+
+    def test_base_viewset_has_perform_destroy(self):
+        """Test that BaseModelViewSet has perform_destroy method."""
+        from apps.core.views_api import BaseModelViewSet
+        self.assertTrue(hasattr(BaseModelViewSet, 'perform_destroy'))
+
+    def test_base_viewset_has_get_queryset(self):
+        """Test that BaseModelViewSet has get_queryset method."""
+        from apps.core.views_api import BaseModelViewSet
+        self.assertTrue(hasattr(BaseModelViewSet, 'get_queryset'))
