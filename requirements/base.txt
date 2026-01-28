@@ -1,0 +1,32 @@
+# Django and REST Framework
+Django>=5.0
+djangorestframework>=3.14
+django-filter>=23.0
+django-cors-headers>=4.3
+
+# Celery for async tasks
+celery>=5.3
+redis>=5.0
+
+# Database
+psycopg2-binary>=2.9
+
+# Data processing
+pandas>=2.0
+numpy>=1.24
+
+# Trading APIs
+ccxt>=4.0
+# MetaTrader5>=5.0.45  # Windows only
+
+# HTTP requests
+requests>=2.31
+aiohttp>=3.9
+
+# Configuration
+python-dotenv>=1.0
+pyyaml>=6.0
+
+# Utilities
+python-dateutil>=2.8
+pytz>=2024.1

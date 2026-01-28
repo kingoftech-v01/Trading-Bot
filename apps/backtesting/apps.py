@@ -1,0 +1,9 @@
+"""App configuration for the backtesting app."""
+
+from django.apps import AppConfig
+
+
+class BacktestingConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'apps.backtesting'
+    verbose_name = 'Backtesting'

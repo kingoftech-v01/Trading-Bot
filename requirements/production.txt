@@ -1,0 +1,12 @@
+# Production requirements
+-r base.txt
+
+# Production server
+gunicorn>=21.0
+uvicorn>=0.24
+
+# Monitoring
+prometheus-client>=0.19
+
+# Sentry for error tracking
+sentry-sdk>=1.38
